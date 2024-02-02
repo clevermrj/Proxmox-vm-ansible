@@ -1,0 +1,30 @@
+- name: Proxmox stuff
+  hosts: proxmox
+  vars:
+    name: "{{ yeppers }}"
+  tasks:
+    - set_fact:
+        yeppers: "myvm-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=4') }}"
+    - proxmox_kvm:
+        api_user    : root@pam
+        api_password: "{{ api_password }}"
+        api_host    : 10.5.0.5
+        clone       : ubuntu-2204-template   # The VM source
+        name        : "{{ yeppers }}"  # The target VM name
+        node        : mjhomelab
+        cores       : 4
+        memory      : 4000
+        storage     : local-lvm
+        format      : qcow2
+        timeout     : 500  # Note: The task can take a while. Adapt
+    - name: start vm
+      proxmox_kvm: 
+        api_user: root@pam
+        api_password: "{{ api_password }}"
+        api_host: 10.5.0.5
+        name: "{{ yeppers }}"
+        node: mjhomelab
+        state: started
+
+# run command below
+# ansible-playbook -i inventory.ini playbook.yaml --ask-vault-pass
