@@ -2,31 +2,39 @@
   hosts: proxmox
   vars_files:
     - vault.yml  # Include the vault file
+  vars_prompt:
+    - name: vm_name
+      prompt: "Enter the name for the VM:"
+      private: no  # Set to yes if you want to hide input (like passwords)
+    - name: vm_id
+      prompt: "Enter the ID for the VM:"
+      private: no  # Set to yes if you want to hide input (like passwords)      
+
   tasks:
-    - set_fact:
-        yeppers: "myvm-{{ lookup('password', '/dev/null chars=ascii_lowercase,digits length=4') }}"
-    - proxmox_kvm:
+    - name: Set vm_name as a fact
+      set_fact:
+        vm_name: "{{ vm_name }}"
+        
+    - name: Create VM on Proxmox
+      proxmox_kvm:
         api_user    : root@pam
         api_password: "{{ api_password }}"  # Use the variable from vault.yml
         api_host    : 10.5.5.2  # Specify your Proxmox host API endpoint
-        clone       : ubuntu-2204-template   # The VM source
-        name        : "{{ yeppers }}"  # The target VM name
-        node        : pve
-        newid       : 401
-        cores       : 4
+        clone       : ubuntu-cloud   # The VM source
+        name        : "{{ vm_name }}"  # The target VM name
+        newid       : "{{ vm_id }}"  # Set the VM ID
+        node        : mjhomelab
+        cores       : 2
         memory      : 4000
         storage     : local-lvm
         format      : qcow2
-        timeout     : 500  # Note: The task can take a while. Adapt
+        timeout     : 500  # Note: The ta
     - name: start vm
       proxmox_kvm: 
         api_user    : root@pam
         api_password: "{{ api_password }}"  # Use the variable from vault.yml
         api_host    : 10.5.5.2  # Specify your Proxmox host API endpoint
-        name        : "{{ yeppers }}"
-        node        : pve
+        name        : "{{ vm_name }}"
+        node        : mjhomelab
         state       : started
-
-
-# run command below
-# ansible-playbook -i inventory.ini playbook.yaml --ask-vault-pass
+  
